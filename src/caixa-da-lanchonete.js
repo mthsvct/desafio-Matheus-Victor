@@ -2,25 +2,15 @@ class CaixaDaLanchonete {
 
 
     calcularValorDaCompra(metodoDePagamento, itens) {
-        // metodoDePagamento
-        // itens = ['cafe,1', 'sanduiche,1', 'queijo,1']
-
-        // Dinheiro = 5% de desconto
-        // Crédito = + 3% acrescimo
-        let card = this.cardapio();
-        let pedidos = this.converter(itens);
+        let pedidos = this.converter(itens, this.cardapio());
         let formas = ["dinheiro", "debito", "credito"]
-
-        let ver = this.verificacoes(pedidos, card, metodoDePagamento, formas);
-
-        console.log(ver);
-        // let valor = this.calcular(pedidos, card);
-        return "";
+        let { aceito, mensagem } = this.verificacoes(pedidos, metodoDePagamento, formas);
+        return aceito ? this.calcular(pedidos, metodoDePagamento) : mensagem;
     }
 
 
-    converter(itens){
-        return itens.map( (item) => { return {cod: item.split(',')[0], qnt: parseInt(item.split(',')[1])}})
+    converter(itens, card){
+        return itens.map( (item) => { return { item: this.buscaItem(item.split(',')[0], card) , qnt: parseInt(item.split(',')[1]), valor: 0 } } )
     }
 
     cardapio(){
@@ -36,32 +26,87 @@ class CaixaDaLanchonete {
         ]
     }
 
-    qntPrincipais(pedidos){
-        return pedidos.filter((p) => { return p.tipo == "principal" });
+
+    buscaItem(cod, card){
+        let aux = card.filter( (i) => i.cod == cod );
+        if (aux.length > 0){
+            return aux[0];
+        }else{
+            return null;
+        }
     }
 
-    codValido(item, card) {
-        // Se o filtro retorna uma lista que possui a quantidade de itens maior que 0:
-        //      Então o código que está no pedido é válido. 
-        return card.filter(i => {return i.cod == item.cod}).length > 0
+    principalPresente(extra, pedidos){
+        return pedidos.filter( (p) => p.item.cod == extra.item.extraDo ).length > 0;
+    }
+
+    verificaPedido(pedido, pedidos){
+        let aceito = true;
+        let mensagem = '';
+
+        if (pedido.item == null){ 
+            aceito = false; 
+            mensagem = "Item inválido!" 
+        } else if(pedido.qnt < 1) { 
+            aceito = false; 
+            mensagem = "Quantidade inválida!";
+        } else if(pedido.item.tipo == "extra" && this.principalPresente(pedido, pedidos) == false) {
+            aceito = false; 
+            mensagem = "Item extra não pode ser pedido sem o principal"
+        }
+
+        return {aceito: aceito, mensagem: mensagem};
     }
 
 
-    verificacoes(pedidos, card, metodo, formas){
-       let aceito = true;
-       let mensagem = '';
-       return {aceito: aceito, mensagem: mensagem};
+    verificacoes(pedidos, metodo, formas){
+        let aceito = true;
+        let mensagem = '';
+        let i = 0;
+
+        if (formas.indexOf(metodo) == -1){
+            aceito = false;
+            mensagem = 'Forma de pagamento inválida!';
+            
+        } else if (pedidos.length == 0){
+            aceito = false;
+            mensagem = 'Não há itens no carrinho de compra!';
+        
+        } else {
+            while (aceito && i < pedidos.length) {
+                let aux = this.verificaPedido(pedidos[i], pedidos);
+                aceito = aux.aceito;
+                mensagem = aux.mensagem;
+                i += 1;
+            }
+        }
+        return {aceito: aceito, mensagem: mensagem};
     }
+
+
+    calcular(pedidos, metodo){
+        let valorTotal = 0.0;
+        pedidos.forEach( (p) => { valorTotal += (p.item.valor * p.qnt) });
+        return `R$ ${this.desconto(valorTotal, metodo).toFixed(2).toString().replace(".", ",")}`;
+    }
+
+
+    desconto(valor, metodo){
+        return (metodo == "dinheiro") ? (valor * 0.95) : (metodo == "credito") ? (valor + (valor * 0.03)) : valor
+    }
+
 
 }
 
-// export { CaixaDaLanchonete };
+export { CaixaDaLanchonete };
 
-const caixa = new CaixaDaLanchonete();
+// const caixa = new CaixaDaLanchonete();
 
-caixa.calcularValorDaCompra(
-    'dinheiro',
-    ['cafe,1', 'sanduiche,1', 'queijo,1']
-)
+// let v = caixa.calcularValorDaCompra(
+//     'dinheiro',
+//     ['cafe,4', 'sanduiche,3', 'queijo,2']
+// )
+
+// console.log(v);
 
 
