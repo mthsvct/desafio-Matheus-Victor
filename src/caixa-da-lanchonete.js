@@ -3,14 +3,23 @@ class CaixaDaLanchonete {
 
     calcularValorDaCompra(metodoDePagamento, itens) {
         let pedidos = this.converter(itens, this.cardapio());
-        let formas = ["dinheiro", "debito", "credito"]
-        let { aceito, mensagem } = this.verificacoes(pedidos, metodoDePagamento, formas);
-        return aceito ? this.calcular(pedidos, metodoDePagamento) : mensagem;
+        let { aceito, mensagem } = this.verificacoes(pedidos, metodoDePagamento, ["dinheiro", "debito", "credito"]);
+        return aceito ? this.calcular(pedidos, metodoDePagamento, 0) : mensagem;
     }
 
 
     converter(itens, card){
-        return itens.map( (item) => { return { item: this.buscaItem(item.split(',')[0], card) , qnt: parseInt(item.split(',')[1]), valor: 0 } } )
+        return itens.map( 
+            (item) => { 
+                let aux = item.split(',');
+                return { 
+                    item: this.buscaItem(aux[0], card) , 
+                    qnt: aux[1], 
+                    valor: 0,
+                    decimal: aux.length > 2
+                } 
+            } 
+        )
     }
 
     cardapio(){
@@ -28,12 +37,7 @@ class CaixaDaLanchonete {
 
 
     buscaItem(cod, card){
-        let aux = card.filter( (i) => i.cod == cod );
-        if (aux.length > 0){
-            return aux[0];
-        }else{
-            return null;
-        }
+        return card.filter( (i) => i.cod == cod )[0];
     }
 
     principalPresente(extra, pedidos){
@@ -46,10 +50,16 @@ class CaixaDaLanchonete {
 
         if (pedido.item == null){ 
             aceito = false; 
-            mensagem = "Item inválido!" 
-        } else if(pedido.qnt < 1) { 
+            mensagem = "Item inválido!";
+        } else if( pedido.qnt == null || pedido.qnt == "" || isNaN(parseInt(pedido.qnt)) || pedido.qnt.indexOf(".") != -1 || pedido.qnt.indexOf(",") != -1 || pedido.decimal == true ) {
+            // Verifica se a quantidade é um número (não pode ter decimais)
+            aceito = false;
+            mensagem = "Quantidade inválida!";
+
+        } else if(parseInt(pedido.qnt) < 1) { 
             aceito = false; 
             mensagem = "Quantidade inválida!";
+
         } else if(pedido.item.tipo == "extra" && this.principalPresente(pedido, pedidos) == false) {
             aceito = false; 
             mensagem = "Item extra não pode ser pedido sem o principal"
@@ -60,9 +70,7 @@ class CaixaDaLanchonete {
 
 
     verificacoes(pedidos, metodo, formas){
-        let aceito = true;
-        let mensagem = '';
-        let i = 0;
+        let aceito = true,  mensagem = '',  i = 0;
 
         if (formas.indexOf(metodo) == -1){
             aceito = false;
@@ -77,6 +85,7 @@ class CaixaDaLanchonete {
                 let aux = this.verificaPedido(pedidos[i], pedidos);
                 aceito = aux.aceito;
                 mensagem = aux.mensagem;
+                pedidos[i].qnt = aceito ? parseInt(pedidos[i].qnt) : 0;
                 i += 1;
             }
         }
@@ -84,12 +93,10 @@ class CaixaDaLanchonete {
     }
 
 
-    calcular(pedidos, metodo){
-        let valorTotal = 0.0;
-        pedidos.forEach( (p) => { valorTotal += (p.item.valor * p.qnt) });
-        return `R$ ${this.desconto(valorTotal, metodo).toFixed(2).toString().replace(".", ",")}`;
+    calcular(pedidos, metodo, valor){
+        pedidos.forEach((p) => { valor += (p.item.valor * p.qnt) });
+        return `R$ ${this.desconto(valor, metodo).toFixed(2).toString().replace(".", ",")}`;
     }
-
 
     desconto(valor, metodo){
         return (metodo == "dinheiro") ? (valor * 0.95) : (metodo == "credito") ? (valor + (valor * 0.03)) : valor
@@ -104,7 +111,7 @@ export { CaixaDaLanchonete };
 
 // let v = caixa.calcularValorDaCompra(
 //     'dinheiro',
-//     ['cafe,4', 'sanduiche,3', 'queijo,2']
+//     ['cafe,4', 'sanduich,3', 'queijo,2']
 // )
 
 // console.log(v);

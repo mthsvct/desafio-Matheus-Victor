@@ -57,4 +57,28 @@ describe('CaixaDaLanchonete', () => {
     ])('compra %p em %p deve resultar em %p', (_, formaDePagamento, resultadoEsperado, itens) =>
         validaTeste(formaDePagamento, resultadoEsperado, itens));
 
+
+    test.each([
+        ['com quantidade decimal', 'dinheiro', 'Quantidade inválida!', ['cafe,1.5']],
+        ['com quantidade decimal', 'credito', 'Quantidade inválida!', ['sanduiche,1.5']],
+        ['com quantidade decimal', 'debito', 'Quantidade inválida!', ['combo1,1,5', "cafe,2"]],
+    ])('compra %p em %p deve resultar em %p', (_, formaDePagamento, resultadoEsperado, itens) =>
+        validaTeste(formaDePagamento, resultadoEsperado, itens));
+
+    // Teste de códigos inválidos
+    test.each([
+        ['com código inválido', 'dinheiro', 'Item inválido!', ['cafew,1', '1']],
+        ['com código inválido', 'credito', 'Item inválido!', ['s,1', '1']],
+        ['com código inválido', 'debito', 'Item inválido!', ['quejo,1', '1']],
+    ])('compra %p em %p deve resultar em %p', (_, formaDePagamento, resultadoEsperado, itens) =>
+        validaTeste(formaDePagamento, resultadoEsperado, itens));
+
+    // Teste de forma de pagamento inválida
+    test.each([
+        ['com forma de pagamento inválida', 'cash', 'Forma de pagamento inválida!', ['cafe,1', '1']],
+        ['com forma de pagamento inválida', 'dito', 'Forma de pagamento inválida!', ['sanduiche,1', '1']],
+        ['com forma de pagamento inválida', 'pix', 'Forma de pagamento inválida!', ['queijo,1', '1']],
+    ])('compra %p em %p deve resultar em %p', (_, formaDePagamento, resultadoEsperado, itens) =>
+        validaTeste(formaDePagamento, resultadoEsperado, itens));
+
 });
